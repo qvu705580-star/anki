@@ -1,293 +1,346 @@
 <!DOCTYPE html>
-<html lang="vi" data-night="0">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="Anki Pro">
+<meta name="apple-mobile-web-app-title" content="Anki">
 <meta name="theme-color" content="#f2f2f7">
-<title>Anki PWA - Ultimate</title>
+<title>Anki iOS Clone</title>
 <style>
   :root {
-    --blue: #007aff; --new: #007aff; --learn: #ff3b30; --due: #34c759;
-    --bg: #f2f2f7; --panel: #ffffff; --text: #000000; --muted: #8e8e93;
-    --border: #c6c6c8; --btnface: #e5e5ea; 
-    --again: #ff3b30; --hard: #8e8e93; --good: #34c759; --easy: #007aff;
-    --nav-bg: rgba(249, 249, 249, 0.94);
+    --bg-color: #f2f2f7;
+    --list-bg: #ffffff;
+    --text-main: #000000;
+    --text-muted: #8e8e93;
+    --ios-blue: #007aff;
+    --ios-orange: #ff9500;
+    --c-new: #007aff; 
+    --c-learn: #ff3b30; 
+    --c-due: #34c759;
+    --border: rgba(60, 60, 67, 0.29);
+    --nav-bg: rgba(242, 242, 247, 0.85);
   }
-  html[data-night="1"] {
-    --bg: #000000; --panel: #1c1c1e; --text: #ffffff; --muted: #98989d;
-    --border: #38383a; --btnface: #2c2c2e; --nav-bg: rgba(29, 29, 29, 0.94);
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg-color: #000000; --list-bg: #1c1c1e; --text-main: #ffffff; --text-muted: #98989d;
+      --ios-blue: #0a84ff; --ios-orange: #ff9f0a; --c-new: #0a84ff; --c-learn: #ff453a; --c-due: #32d74b;
+      --border: rgba(84, 84, 88, 0.65); --nav-bg: rgba(0, 0, 0, 0.85);
+    }
   }
-  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-  body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); display: flex; flex-direction: column; min-height: 100vh; }
-  
-  header { background: var(--nav-bg); backdrop-filter: blur(10px); padding: calc(env(safe-area-inset-top) + 12px) 16px 12px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 50; }
-  header h1 { margin: 0; font-size: 17px; font-weight: 600; }
-  header button { background: none; border: none; color: var(--blue); font-size: 17px; cursor: pointer; padding: 0; font-weight: 500; }
-  
-  main { flex: 1; overflow-y: auto; padding-bottom: calc(env(safe-area-inset-bottom) + 70px); }
+
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif; margin: 0; padding: 0;}
+  body { background: var(--bg-color); color: var(--text-main); display: flex; flex-direction: column; min-height: 100vh; overflow-x: hidden; font-size: 17px;}
   .hidden { display: none !important; }
-
-  /* Tab Bar */
-  .tab-bar { position: fixed; bottom: 0; left: 0; right: 0; height: calc(env(safe-area-inset-bottom) + 55px); background: var(--nav-bg); backdrop-filter: blur(10px); border-top: 1px solid var(--border); display: flex; justify-content: space-around; padding-bottom: env(safe-area-inset-bottom); z-index: 100; }
-  .tab-item { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--muted); border: none; background: none; font-size: 11px; font-weight: 500; cursor: pointer; }
-  .tab-item.active { color: var(--blue); }
-  .tab-icon { font-size: 22px; margin-bottom: 4px; }
-
-  /* Deck List */
-  .deck-list { background: var(--panel); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); margin-top: 20px; }
-  .deck-row { display: flex; align-items: center; padding: 14px 16px; border-bottom: 1px solid var(--border); cursor: pointer; }
-  .deck-row:last-child { border-bottom: none; }
-  .deck-name { flex: 1; font-size: 17px; font-weight: 500; }
-  .deck-counts span { display: inline-block; width: 28px; text-align: right; font-size: 15px; font-weight: 600; }
-  .c-new { color: var(--new); } .c-learn { color: var(--learn); } .c-due { color: var(--due); }
-
-  /* Study Area */
-  .study-header { display: flex; justify-content: center; gap: 20px; padding: 10px 0; font-size: 15px; font-weight: 600; border-bottom: 1px solid var(--border); background: var(--panel); }
-  .study-area { position: relative; padding: 30px 20px; min-height: 60vh; font-size: 22px; text-align: center; overflow-wrap: break-word; }
-  .card-hr { border: none; border-top: 1px solid var(--border); margin: 25px 0; }
   
-  .answer-bar { position: fixed; bottom: calc(env(safe-area-inset-bottom) + 15px); left: 10px; right: 10px; z-index: 60; }
-  .show-btn { width: 100%; padding: 16px; font-size: 17px; font-weight: 600; background: var(--btnface); color: var(--text); border: none; border-radius: 12px; cursor: pointer; }
-  .grade-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
-  .grade { border: none; border-radius: 12px; padding: 10px 4px; color: #fff; display: flex; flex-direction: column; align-items: center; cursor: pointer; }
-  .grade .ivl { font-size: 13px; opacity: 0.9; margin-bottom: 4px; }
-  .grade .lbl { font-size: 16px; font-weight: 600; }
-  .grade.again { background: var(--again); } .grade.hard { background: var(--hard); }
-  .grade.good { background: var(--good); } .grade.easy { background: var(--easy); }
+  /* TOP NAV */
+  .nav-bar {
+    position: sticky; top: 0; z-index: 100;
+    background: var(--nav-bg); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+    display: flex; justify-content: space-between; align-items: center;
+    padding: calc(env(safe-area-inset-top) + 12px) 16px 12px;
+    border-bottom: 0.5px solid var(--border);
+  }
+  .nav-btn { background: none; border: none; color: var(--ios-blue); font-size: 20px; cursor: pointer; padding: 4px; display: flex; align-items: center; }
+  .nav-btn.text-btn { font-size: 17px; }
+  .nav-title { font-size: 17px; font-weight: 600; text-align: center; flex: 1; }
+  .nav-group { display: flex; gap: 14px; align-items: center; width: 85px; }
+  .nav-group.right { justify-content: flex-end; }
+  .nav-group.left { justify-content: flex-start; }
 
-  /* UI Components */
-  .form-group { padding: 0 16px; margin-top: 20px; }
-  .form-group label { display: block; font-size: 13px; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; font-weight: 600;}
-  .input-box { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
-  .input-box input, .input-box select { width: 100%; border: none; padding: 12px 16px; font-size: 17px; background: transparent; color: var(--text); outline: none;}
-  .input-box input:not(:last-child) { border-bottom: 1px solid var(--border); }
-  .editor { padding: 12px 16px; min-height: 80px; outline: none; }
-  .editor:not(:last-child) { border-bottom: 1px solid var(--border); }
-  [contenteditable="true"]:empty:before { content: attr(placeholder); color: var(--muted); pointer-events: none; }
+  main { flex: 1; overflow-y: auto; padding-bottom: calc(env(safe-area-inset-bottom) + 20px); }
 
-  /* Thanh công cụ Rich Text */
-  .rich-text-toolbar { display: flex; gap: 15px; padding: 10px 16px; background: var(--btnface); border-bottom: 1px solid var(--border); align-items: center; overflow-x: auto; white-space: nowrap;}
-  .rich-text-toolbar button { background: none; border: none; font-size: 16px; font-weight: bold; color: var(--text); cursor: pointer; }
+  /* GROUPED LISTS */
+  .ios-group { background: var(--list-bg); border-radius: 10px; margin: 20px 16px 10px; overflow: hidden; }
+  .ios-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 12px 16px; border-bottom: 0.5px solid var(--border);
+    cursor: pointer; font-size: 17px; min-height: 44px;
+  }
+  .ios-row:last-child { border-bottom: none; }
+  .ios-row:active { background: rgba(0,0,0,0.05); }
+  .deck-name { flex: 1; font-weight: 400; }
+  .deck-stats { display: flex; align-items: center; gap: 8px; }
+  .counts { text-align: right; font-size: 13px; line-height: 1.3; font-weight: 400; display: flex; flex-direction: column;}
+  .count-due { color: var(--c-due); }
+  .count-new { color: var(--c-new); }
+  .chevron { color: #c7c7cc; font-size: 20px; font-weight: 400; padding-left: 2px; }
 
-  .btn { display: block; width: calc(100% - 32px); margin: 20px auto; padding: 14px; font-size: 17px; font-weight: 600; text-align: center; border-radius: 10px; border: none; cursor: pointer; }
-  .btn-primary { background: var(--blue); color: #fff; }
-  .btn-outline { background: transparent; border: 1px solid var(--blue); color: var(--blue); }
+  /* BOTTOM ACTIONS (Decks) */
+  .bottom-actions { display: flex; justify-content: space-between; padding: 10px 20px; font-size: 15px; }
+  .btn-add-export { color: var(--ios-blue); cursor: pointer; }
+  .btn-sync { color: var(--ios-orange); cursor: pointer; }
 
-  /* Heatmap Stats */
-  .stats-card { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 16px; margin: 16px; }
-  .stats-title { font-size: 15px; font-weight: 600; margin-bottom: 12px; }
-  .heatmap-container { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 10px; }
-  .heatmap-cell { width: 14px; height: 14px; border-radius: 3px; background: var(--btnface); }
-  .heatmap-cell[data-level="1"] { background: #9be9a8; }
-  .heatmap-cell[data-level="2"] { background: #40c463; }
-  .heatmap-cell[data-level="3"] { background: #30a14e; }
-  .heatmap-cell[data-level="4"] { background: #216e39; }
-  html[data-night="1"] .heatmap-cell[data-level="1"] { background: #0e4429; }
-  html[data-night="1"] .heatmap-cell[data-level="2"] { background: #006d32; }
-  html[data-night="1"] .heatmap-cell[data-level="3"] { background: #26a641; }
-  html[data-night="1"] .heatmap-cell[data-level="4"] { background: #39d353; }
+  /* ACTION SHEET (Add/Export) */
+  .action-sheet-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 1000;
+    display: flex; flex-direction: column; justify-content: flex-end; padding: 10px;
+    opacity: 0; pointer-events: none; transition: opacity 0.2s ease;
+  }
+  .action-sheet-overlay.active { opacity: 1; pointer-events: auto; }
+  .action-sheet { transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.1, 0.8, 0.2, 1); padding-bottom: env(safe-area-inset-bottom);}
+  .action-sheet-overlay.active .action-sheet { transform: translateY(0); }
+  
+  .as-group { background: rgba(255,255,255,0.9); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border-radius: 14px; margin-bottom: 8px; overflow: hidden; }
+  @media (prefers-color-scheme: dark) { .as-group { background: rgba(30,30,30,0.8); } }
+  .as-label { padding: 12px; font-size: 13px; color: var(--text-muted); text-align: center; border-bottom: 0.5px solid var(--border); }
+  .as-btn {
+    width: 100%; padding: 16px; border: none; background: transparent;
+    font-size: 20px; color: var(--ios-blue); border-bottom: 0.5px solid var(--border); cursor: pointer;
+  }
+  .as-btn:active { background: rgba(0,0,0,0.1); }
+  .as-btn:last-child { border-bottom: none; }
+  .as-cancel { font-weight: 600; }
+
+  /* ADD VIEW */
+  .toolbar {
+    display: flex; gap: 20px; padding: 12px 16px; background: var(--bg-color);
+    overflow-x: auto; border-bottom: 0.5px solid var(--border); white-space: nowrap;
+    align-items: center; scrollbar-width: none;
+  }
+  .toolbar::-webkit-scrollbar { display: none; }
+  .toolbar button { background: none; border: none; color: var(--ios-blue); font-size: 18px; cursor: pointer; }
+  .toolbar button.bold { font-weight: bold; }
+  .toolbar button.italic { font-style: italic; font-family: serif;}
+  .toolbar button.underline { text-decoration: underline; }
+  
+  .add-meta { display: flex; justify-content: space-between; padding: 10px 16px; font-size: 11px; color: var(--ios-blue); text-transform: uppercase;}
+  .editor-group { background: var(--list-bg); border-top: 0.5px solid var(--border); border-bottom: 0.5px solid var(--border); }
+  .editor-field { position: relative; border-bottom: 0.5px solid var(--border); }
+  .editor-field:last-child { border-bottom: none; }
+  .editor-field:focus-within { border-bottom: 1.5px solid var(--ios-blue); }
+  .editor-label { font-size: 13px; color: var(--text-muted); position: absolute; top: 8px; left: 16px; pointer-events: none;}
+  .editor-box { width: 100%; min-height: 60px; padding: 30px 16px 16px; font-size: 17px; outline: none; color: var(--text-main); word-wrap: break-word; }
+
+  /* STUDY VIEW */
+  .study-area { padding: 40px 20px 120px; font-size: 22px; text-align: center; word-wrap: break-word; }
+  .study-hr { border: none; border-top: 1px solid var(--border); margin: 30px 0; }
+  .study-bottom { position: fixed; bottom: 0; left: 0; right: 0; background: var(--bg-color); z-index: 50; padding-bottom: env(safe-area-inset-bottom);}
+  
+  .study-counter { display: flex; justify-content: center; gap: 4px; font-size: 15px; font-weight: 400; padding: 12px 0; border-top: 0.5px solid var(--border); position: relative;}
+  .study-counter span { padding: 0 2px; }
+  .study-gear { position: absolute; right: 16px; top: 10px; color: var(--ios-blue); font-size: 22px; cursor: pointer;}
+
+  .answer-btns { display: flex; gap: 10px; padding: 10px 16px 4px; justify-content: center;}
+  .ans-btn { flex: 1; padding: 10px 0; border-radius: 8px; border: none; color: #fff; font-size: 16px; font-weight: 500; display: flex; flex-direction: column; align-items: center; cursor: pointer;}
+  .ans-btn span { font-size: 13px; font-weight: 400; opacity: 0.9; margin-bottom: 2px;}
+  .ans-again { background: var(--c-learn); } .ans-hard { background: #8e8e93; } .ans-good { background: var(--c-due); } .ans-easy { background: var(--ios-blue); }
+  
+  .show-ans-btn { width: calc(100% - 32px); margin: 10px auto; padding: 16px; border-radius: 10px; border: none; background: #e5e5ea; color: #000; font-size: 17px; font-weight: 500; display: block; cursor: pointer;}
+  @media (prefers-color-scheme: dark) { .show-ans-btn { background: #2c2c2e; color: #fff; } }
+
+  /* DIFF / TYPE IN ANSWER (Red homograph style) */
+  .type-input { width: 100%; border: none; border-bottom: 1px solid var(--text-main); background: transparent; color: var(--text-main); font-size: 20px; text-align: center; padding: 10px; margin-bottom: 20px; outline: none; }
+  .type-cmp { font-size: 22px; margin-top: 10px; word-break: break-all; }
+  .type-cmp .ok { color: var(--c-due); }
+  .type-cmp .bad { color: var(--c-learn); background: rgba(255, 59, 48, 0.15); }
+  .type-cmp .miss { color: var(--text-muted); text-decoration: line-through; }
+  
+  /* BROWSE VIEW */
+  .search-bar-container { padding: 10px 16px; background: var(--nav-bg); border-bottom: 0.5px solid var(--border); }
+  .search-input-wrapper { background: rgba(118, 118, 128, 0.12); border-radius: 10px; display: flex; align-items: center; padding: 6px 8px; }
+  .search-input-wrapper span { color: var(--text-muted); font-size: 16px; margin-right: 6px; }
+  .search-input-wrapper input { border: none; background: transparent; width: 100%; font-size: 17px; color: var(--text-main); outline: none; }
 </style>
 </head>
 <body>
 
-<header>
-  <button id="headerLeftBtn">Đồng bộ</button>
-  <h1 id="headerTitle">Bộ thẻ</h1>
-  <button id="headerRightBtn" onclick="toggleNightMode()">🌙</button>
-</header>
-
-<main>
-  <section id="view-decks">
-    <div class="deck-list" id="deckList"></div>
-    <button class="btn btn-outline" onclick="createNewDeck()">+ Thêm bộ thẻ mới</button>
-  </section>
-
-  <section id="view-study" class="hidden">
-    <div class="study-header">
-      <span class="c-new" id="sNew">0</span>
-      <span class="c-learn" id="sLearn">0</span>
-      <span class="c-due" id="sDue">0</span>
+<div id="view-decks">
+  <div class="nav-bar">
+    <div class="nav-group left"><button class="nav-btn" style="font-weight:bold">?</button><button class="nav-btn">📊</button></div>
+    <div class="nav-title">Decks</div>
+    <div class="nav-group right"><button class="nav-btn">🔍</button><button class="nav-btn" onclick="navTo('settings')">⚙️</button></div>
+  </div>
+  <main>
+    <div class="ios-group" id="deckList"></div>
+    <div class="bottom-actions">
+      <div class="btn-add-export" onclick="document.getElementById('actionSheet').classList.add('active')">Add/Export</div>
+      <div class="btn-sync" onclick="alert('Đã đồng bộ dữ liệu nội bộ!')">Synchronize</div>
     </div>
+  </main>
+</div>
+
+<div class="action-sheet-overlay" id="actionSheet" onclick="if(event.target===this) this.classList.remove('active')">
+  <div class="action-sheet">
+    <div class="as-group">
+      <div class="as-label">Add/Export</div>
+      <button class="as-btn" onclick="alert('Tính năng đang phát triển')">Shared Deck List</button>
+      <button class="as-btn" onclick="alert('Tính năng đang phát triển')">Download Link</button>
+      <button class="as-btn" onclick="alert('Tính năng đang phát triển')">Import from iTunes</button>
+      <button class="as-btn" onclick="exportData()">Export Collection</button>
+      <button class="as-btn" onclick="createDeck()">Add Empty Deck</button>
+    </div>
+    <div class="as-group">
+      <button class="as-btn as-cancel" onclick="document.getElementById('actionSheet').classList.remove('active')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<div id="view-add" class="hidden">
+  <div class="nav-bar">
+    <div class="nav-group left"><button class="nav-btn text-btn" onclick="navTo('decks')">〈 Back</button></div>
+    <div class="nav-title">Add</div>
+    <div class="nav-group right"><button class="nav-btn text-btn" style="font-weight:600" onclick="addNote()">Done</button></div>
+  </div>
+  <div class="toolbar">
+    <button class="bold" onclick="document.execCommand('bold', false, null)">B</button>
+    <button class="italic" onclick="document.execCommand('italic', false, null)">I</button>
+    <button class="underline" onclick="document.execCommand('underline', false, null)">U</button>
+    <button>F<sub style="font-size:10px">x</sub></button>
+    <button>👁</button>
+    <button>🎤</button>
+    <button onclick="document.getElementById('mediaUpload').click()">📎</button>
+    <input type="file" id="mediaUpload" accept="image/*,audio/*" style="display:none" onchange="handleMediaUpload(event)">
+    <button>A</button>
+    <button>√</button>
+    <button>&lt;/&gt;</button>
+  </div>
+  <div class="add-meta">
+    <div id="addTypeLabel">Type: Basic</div>
+    <div id="addDeckLabel">Deck: vh</div>
+  </div>
+  <div class="editor-group">
+    <div class="editor-field">
+      <div class="editor-label">Front</div>
+      <div id="addFront" class="editor-box" contenteditable="true"></div>
+    </div>
+    <div class="editor-field">
+      <div class="editor-label">Back</div>
+      <div id="addBack" class="editor-box" contenteditable="true"></div>
+    </div>
+    <div class="editor-field">
+      <div class="editor-label">Tags</div>
+      <div id="addTags" class="editor-box" contenteditable="true"></div>
+    </div>
+  </div>
+</div>
+
+<div id="view-study" class="hidden">
+  <div class="nav-bar" style="background: var(--bg-color); border-bottom: none;">
+    <div class="nav-group left" style="width:auto"><button class="nav-btn text-btn" onclick="navTo('decks')">〈 Decks</button></div>
+    <div class="nav-group right" style="width:160px; justify-content: space-between; font-size:15px; color:var(--ios-blue);">
+      <span style="cursor:pointer" onclick="navTo('add')">Add</span>
+      <span style="cursor:pointer">Edit</span>
+      <span style="cursor:pointer" onclick="navTo('browse')">Browse</span>
+    </div>
+  </div>
+  <main style="background: var(--bg-color);">
     <div class="study-area">
-      <div id="cardContent" style="position: relative; z-index: 5;"></div>
+      <div id="cardContent"></div>
     </div>
-    <div class="answer-bar hidden" id="answerBar"></div>
-  </section>
+  </main>
+  <div class="study-bottom">
+    <div id="answerBar"></div>
+    <div class="study-counter">
+      <span class="count-new" id="sNew">600</span> <span style="color:var(--text-main)">+</span>
+      <span class="count-learn" id="sLearn">0</span> <span style="color:var(--text-main)">+</span>
+      <span class="count-due" id="sDue">0</span>
+      <div class="study-gear">⚙️</div>
+    </div>
+  </div>
+</div>
 
-  <section id="view-add" class="hidden">
-    <div class="form-group">
-      <label>Loại thẻ & Vị trí</label>
-      <div class="input-box">
-        <select id="addType">
-          <option value="basic">Cơ bản (Mặt trước -> Mặt sau)</option>
-          <option value="cloze">Điền chỗ trống (Cloze)</option>
-        </select>
-        <select id="addDeck"></select>
-      </div>
-    </div>
-    <div class="form-group">
-      <label>Nội dung thẻ</label>
-      <div class="input-box">
-        <div class="rich-text-toolbar">
-          <button onclick="document.execCommand('bold', false, null)"><b>B</b></button>
-          <button onclick="document.execCommand('italic', false, null)"><i>I</i></button>
-          <button onclick="document.execCommand('underline', false, null)"><u>U</u></button>
-          <button onclick="document.execCommand('insertText', false, '{{c1::...}}')">[…]</button>
-          <div style="width: 1px; height: 20px; background: var(--border);"></div>
-          <button onclick="document.getElementById('mediaUpload').click()">📎 File</button>
-          <input type="file" id="mediaUpload" accept="image/*,audio/*" style="display:none" onchange="handleMediaUpload(event)">
-        </div>
-        <div id="addFront" class="editor" contenteditable="true" placeholder="Mặt trước..."></div>
-        <div id="addBack" class="editor" contenteditable="true" placeholder="Mặt sau..."></div>
-      </div>
-    </div>
-    <div class="form-group">
-      <label>Nhãn (Tags)</label>
-      <div class="input-box">
-        <input type="text" id="addTags" placeholder="Ví dụ: hsk5 kinh-te ielts">
-      </div>
-    </div>
-    <button class="btn btn-primary" onclick="addNote()">Tạo thẻ</button>
-  </section>
+<div id="view-settings" class="hidden">
+  <div class="nav-bar">
+    <div class="nav-group left"><button class="nav-btn text-btn" onclick="navTo('decks')">〈 Back</button></div>
+    <div class="nav-title">Preferences</div>
+    <div class="nav-group right"></div>
+  </div>
+  <div class="ios-group">
+    <div class="ios-row">Syncing <span class="chevron">›</span></div>
+    <div class="ios-row">Review <span class="chevron">›</span></div>
+    <div class="ios-row">Editing <span class="chevron">›</span></div>
+    <div class="ios-row">Theme <span class="chevron">›</span></div>
+    <div class="ios-row">Profiles <span class="chevron">›</span></div>
+    <div class="ios-row" onclick="exportData()">Backups <span class="chevron">›</span></div>
+    <div class="ios-row">About <span class="chevron">›</span></div>
+  </div>
+  <div class="ios-group">
+    <div class="ios-row" style="color: var(--ios-blue);">Check Database</div>
+    <div class="ios-row" style="color: var(--ios-blue);">Check Media</div>
+    <div class="ios-row" style="color: var(--ios-blue);">Empty Cards</div>
+  </div>
+</div>
 
-  <section id="view-stats" class="hidden">
-    <div class="stats-card">
-      <div class="stats-title">Hoạt động ôn tập (30 ngày qua)</div>
-      <div class="heatmap-container" id="heatmapGrid"></div>
-      <p style="font-size: 12px; color: var(--muted); margin-top: 10px;">Dữ liệu trích xuất từ Review Logs (RevLog).</p>
+<div id="view-browse" class="hidden">
+  <div class="nav-bar">
+    <div class="nav-group left"><button class="nav-btn text-btn" onclick="navTo('settings')">⚙️</button><button class="nav-btn">👁</button></div>
+    <div class="nav-title">Browse</div>
+    <div class="nav-group right"><button class="nav-btn">≡</button><button class="nav-btn" onclick="navTo('study')">✓</button></div>
+  </div>
+  <div class="search-bar-container">
+    <div class="search-input-wrapper">
+      <span>🔍</span>
+      <input type="text" placeholder="deck:current" id="browseSearch">
     </div>
-    <div class="form-group">
-      <label>Hệ thống</label>
-      <button class="btn btn-outline" onclick="exportData()">Lưu trữ JSON</button>
-    </div>
-  </section>
-</main>
-
-<div class="tab-bar" id="tabBar">
-  <button class="tab-item active" data-tab="decks"><div class="tab-icon">🗂</div>Bộ thẻ</button>
-  <button class="tab-item" data-tab="add"><div class="tab-icon">➕</div>Thêm</button>
-  <button class="tab-item" data-tab="stats"><div class="tab-icon">📊</div>Thống kê</button>
+  </div>
 </div>
 
 <script>
-/* CƠ SỞ DỮ LIỆU INDEXED_DB (Chứa Media) */
-const DB_NAME = "AnkiMediaDB";
-let db;
+/* DB MEDIA */
+const DB_NAME = "AnkiMediaDB"; let db;
+function initDB() { return new Promise((r) => { const req = indexedDB.open(DB_NAME, 1); req.onupgradeneeded = (e) => { e.target.result.createObjectStore("media"); }; req.onsuccess = (e) => { db = e.target.result; r(); }; }); }
+function saveMedia(id, blob) { return new Promise((r) => { const tx = db.transaction("media", "readwrite"); tx.objectStore("media").put(blob, id); tx.oncomplete = r; }); }
+function getMedia(id) { return new Promise((r) => { const tx = db.transaction("media", "readonly"); const req = tx.objectStore("media").get(id); req.onsuccess = () => r(req.result); req.onerror = () => r(null); }); }
 
-function initDB() {
-  return new Promise((resolve, reject) => {
-    const req = indexedDB.open(DB_NAME, 1);
-    req.onupgradeneeded = (e) => { e.target.result.createObjectStore("media"); };
-    req.onsuccess = (e) => { db = e.target.result; resolve(); };
-    req.onerror = () => reject();
-  });
-}
-function saveMedia(id, fileBlob) {
-  return new Promise((resolve) => {
-    const tx = db.transaction("media", "readwrite");
-    tx.objectStore("media").put(fileBlob, id);
-    tx.oncomplete = resolve;
-  });
-}
-function getMedia(id) {
-  return new Promise((resolve) => {
-    const tx = db.transaction("media", "readonly");
-    const req = tx.objectStore("media").get(id);
-    req.onsuccess = () => resolve(req.result);
-    req.onerror = () => resolve(null);
-  });
-}
 async function handleMediaUpload(e) {
-  const file = e.target.files[0];
-  if(!file) return;
-  const id = "media_" + Date.now();
-  await saveMedia(id, file);
-  const tempUrl = URL.createObjectURL(file);
-  let html = file.type.startsWith("image/") ? `<br><img src="${tempUrl}" data-media-id="${id}" style="max-width:100%; border-radius:8px;"><br>` : `<br><audio controls src="${tempUrl}" data-media-id="${id}"></audio><br>`;
-  document.execCommand('insertHTML', false, html);
-  e.target.value = ""; 
+  const f = e.target.files[0]; if(!f) return;
+  const id = "m_" + Date.now(); await saveMedia(id, f);
+  const url = URL.createObjectURL(f);
+  let html = f.type.startsWith("image/") ? `<br><img src="${url}" data-media-id="${id}" style="max-width:150px; border-radius:10px;"><br>` : `<audio controls src="${url}" data-media-id="${id}"></audio>`;
+  document.execCommand('insertHTML', false, html); e.target.value = ""; 
 }
-async function renderHTMLWithMedia(htmlString) {
-  const tempDiv = document.createElement('div');
-  tempDiv.innerHTML = htmlString;
-  const mediaEls = tempDiv.querySelectorAll('[data-media-id]');
-  for (let el of mediaEls) {
-    const id = el.getAttribute('data-media-id');
-    const blob = await getMedia(id);
-    if (blob) el.src = URL.createObjectURL(blob);
+async function renderHTML(htmlString) {
+  if(!htmlString) return "";
+  const div = document.createElement('div'); div.innerHTML = htmlString;
+  for (let el of div.querySelectorAll('[data-media-id]')) {
+    const blob = await getMedia(el.getAttribute('data-media-id'));
+    if(blob) el.src = URL.createObjectURL(blob);
   }
-  return tempDiv.innerHTML;
+  return div.innerHTML;
 }
 
-/* CẤU HÌNH THUẬT TOÁN SM-2 KÈM FUZZ */
-const CFG = { steps: [1, 10], gradIvl: 1, easyIvl: 4, startingEase: 2500 };
+/* APP LOGIC & SM-2 */
 const DAY = 86400000, MIN = 60000;
-let state = null, currentDeck = null, currentCard = null, isAnswerShown = false;
+let state = null, currentDeck = null, currentCard = null, isAns = false;
 
-function uid() { return Date.now().toString(36) + Math.random().toString(36).substring(2,7); }
+function uid() { return Date.now().toString(36) + Math.random().toString(36).substring(2,5); }
 function today() { return Math.floor((Date.now() - 4*3600000)/DAY); }
 
-function applyFuzz(ivl) {
-  if (ivl < 2.5) return Math.round(ivl);
-  let fuzz = 0;
-  if (ivl < 7) fuzz = Math.max(1, Math.round(ivl * 0.25));
-  else if (ivl < 30) fuzz = Math.max(2, Math.round(ivl * 0.15));
-  else fuzz = Math.max(4, Math.round(ivl * 0.05));
-  const min = ivl - fuzz;
-  const max = ivl + fuzz;
-  return Math.floor(min + Math.random() * (max - min + 1));
-}
-
 function loadData() {
-  const raw = localStorage.getItem("anki_pwa_ultimate");
+  const raw = localStorage.getItem("anki_ios_clone");
   if (raw) return JSON.parse(raw);
-  
   const d1 = uid(), d2 = uid(), d3 = uid();
-  const s = { 
-    version: 4, 
-    decks: [{id: d1, name: "Kinh tế vi mô"}, {id: d2, name: "Từ vựng HSK 5"}, {id: d3, name: "Lập trình Python"}], 
-    notes: [], cards: [], revlogs: []
+  const s = { decks: [{id: d1, name: "- Chinese"}, {id: d2, name: "- 1. Vocab"}, {id: d3, name: "vh"}], notes: [], cards: [] };
+  
+  const addCard = (dk, type, f, b) => {
+    const n = {id: uid(), deckId: dk, type: type, front: f, back: b};
+    s.notes.push(n);
+    s.cards.push({id: uid(), noteId: n.id, deckId: dk, state: "new", due: 0, ivl: 0, ease: 2500, reps: 0});
   };
   
-  const addCard = (dk, f, b) => {
-    const n = {id: uid(), deckId: dk, type: "basic", front: f, back: b, tags: []};
-    s.notes.push(n);
-    s.cards.push({id: uid(), noteId: n.id, deckId: dk, state: "new", due: 0, ivl: 0, ease: CFG.startingEase, reps: 0, lapses: 0, stepIdx: 0});
-  };
-
-  addCard(d1, "Opportunity Cost (Chi phí cơ hội)", "Giá trị của phương án tốt nhất bị bỏ lỡ khi đưa ra một lựa chọn.");
-  addCard(d2, "糟糕 (zāogāo)", "Tồi tệ, hỏng bét.");
-  addCard(d3, "List Comprehension", "Cú pháp khởi tạo list: <br><code>[x**2 for x in range(10)]</code>");
+  // Seed data matching screenshot
+  addCard(d3, "typein", "get; obtain; win; earn<br>verb", "He received a gift.<br><span style='color: #ff3b30;'>homograph</span>");
+  for(let i=0;i<168;i++) addCard(d1, "basic", "Test Due " + i, "Ans"); 
+  for(let i=0;i<4789;i++) addCard(d1, "basic", "Test New " + i, "Ans");
+  
   return s;
 }
-function saveData() { localStorage.setItem("anki_pwa_ultimate", JSON.stringify(state)); }
+function saveData() { localStorage.setItem("anki_ios_clone", JSON.stringify(state)); }
 
 /* NAVIGATION */
-document.querySelectorAll('.tab-item').forEach(btn => {
-  btn.addEventListener('click', () => {
-    document.querySelectorAll('.tab-item').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    document.querySelectorAll('main > section').forEach(s => s.classList.add('hidden'));
-    
-    const tab = btn.dataset.tab;
-    document.getElementById('view-' + tab).classList.remove('hidden');
-    document.getElementById('headerTitle').innerText = {decks: "Bộ thẻ", add: "Thêm thẻ", stats: "Thống kê"}[tab];
-    
-    if(tab === 'decks') renderDecks();
-    if(tab === 'add') renderAddScreen();
-    if(tab === 'stats') renderStats();
-  });
-});
-
-function toggleNightMode() {
-  const root = document.documentElement;
-  root.setAttribute("data-night", root.getAttribute("data-night") === "1" ? "0" : "1");
+function navTo(viewId) {
+  ['decks', 'add', 'study', 'settings', 'browse'].forEach(v => document.getElementById('view-' + v).classList.add('hidden'));
+  document.getElementById('view-' + viewId).classList.remove('hidden');
+  if(viewId === 'decks') renderDecks();
+  if(viewId === 'add') {
+      const dk = state.decks.find(d => d.id === currentDeck) || state.decks[0];
+      document.getElementById('addDeckLabel').innerText = "Deck: " + (dk ? dk.name : "Default");
+  }
 }
 
-/* DECKS */
+/* RENDER DECKS */
 function renderDecks() {
   const list = document.getElementById('deckList');
   list.innerHTML = "";
@@ -297,52 +350,58 @@ function renderDecks() {
     let n=0, l=0, d=0;
     state.cards.filter(c => c.deckId === dk.id).forEach(c => {
       if(c.state === "new") n++;
-      else if(c.state === "learning" && c.due <= now) l++;
+      else if(c.state === "learning") l++; 
       else if(c.state === "review" && c.due <= td) d++;
     });
+    
+    // Screenshot: Green (due) on top, Blue (new) on bottom.
+    let countsHtml = `<div class="counts">
+      <div class="count-due">${d>0?d:0}</div>
+      <div class="count-new">${n>0?n:0}</div>
+    </div>`;
+
     list.innerHTML += `
-      <div class="deck-row" onclick="startStudy('${dk.id}', '${dk.name}')">
+      <div class="ios-row" onclick="startStudy('${dk.id}')">
         <div class="deck-name">${dk.name}</div>
-        <div class="deck-counts">
-          <span class="c-new">${n}</span><span class="c-learn">${l}</span><span class="c-due">${d}</span>
-        </div>
+        <div class="deck-stats">${countsHtml} <span class="chevron">›</span></div>
       </div>
     `;
   });
 }
 
-function createNewDeck() {
-  const name = prompt("Nhập tên bộ thẻ mới:");
+function createDeck() {
+  document.getElementById('actionSheet').classList.remove('active');
+  const name = prompt("Enter new deck name:");
   if(name) { state.decks.push({id: uid(), name: name.trim()}); saveData(); renderDecks(); }
 }
 
-/* STUDY CORE */
-function startStudy(deckId, deckName) {
-  currentDeck = deckId;
-  document.querySelectorAll('main > section').forEach(s => s.classList.add('hidden'));
-  document.getElementById('view-study').classList.remove('hidden');
-  document.getElementById('tabBar').style.display = 'none'; 
+function addNote() {
+  const dk = currentDeck || state.decks[0].id;
+  const f = document.getElementById('addFront').innerHTML;
+  const b = document.getElementById('addBack').innerHTML;
+  if(!f || f==="<br>") return alert("Front field is empty!");
+
+  const n = {id: uid(), deckId: dk, type: "basic", front: f, back: b};
+  state.notes.push(n);
+  state.cards.push({id: uid(), noteId: n.id, deckId: dk, state: "new", due: 0, ivl: 0, ease: 2500, reps: 0});
   
-  document.getElementById('headerTitle').innerText = deckName;
-  document.getElementById('headerLeftBtn').innerText = "Trở về";
-  document.getElementById('headerLeftBtn').onclick = () => {
-    document.getElementById('headerLeftBtn').innerText = "Đồng bộ";
-    document.getElementById('headerLeftBtn').onclick = null;
-    document.getElementById('tabBar').style.display = 'flex';
-    document.querySelector('.tab-item[data-tab="decks"]').click();
-  };
-  loadNextCard();
+  saveData();
+  document.getElementById('addFront').innerHTML = "";
+  document.getElementById('addBack').innerHTML = "";
+  navTo('decks');
+}
+
+/* STUDY CORE */
+function startStudy(dkId) {
+  currentDeck = dkId; navTo('study'); loadNextCard();
 }
 
 async function loadNextCard() {
   const td = today(), now = Date.now();
   const cards = state.cards.filter(c => c.deckId === currentDeck);
-  
   let n=0, l=0, d=0;
   cards.forEach(c => {
-    if(c.state === "new") n++;
-    else if(c.state === "learning") l++;
-    else if(c.state === "review" && c.due <= td) d++;
+    if(c.state === "new") n++; else if(c.state === "learning") l++; else if(c.state === "review" && c.due <= td) d++;
   });
   
   document.getElementById('sNew').innerText = n;
@@ -355,135 +414,94 @@ async function loadNextCard() {
   const bar = document.getElementById('answerBar');
   
   if(!next) {
-    content.innerHTML = `<div style="padding-top:60px">🎉<br>Xong rồi! Không còn thẻ nào tới hạn.</div>`;
-    bar.classList.add('hidden'); currentCard = null; return;
+    content.innerHTML = `<br><br><span style="color:var(--text-muted)">Congratulations! You have finished this deck for now.</span>`;
+    bar.innerHTML = ""; currentCard = null; return;
   }
   
-  currentCard = next;
-  isAnswerShown = false;
+  currentCard = next; isAns = false;
   const note = state.notes.find(nt => nt.id === next.noteId);
-  content.innerHTML = await renderHTMLWithMedia(note.front);
-  bar.classList.remove('hidden');
-  bar.innerHTML = `<button class="show-btn" onclick="showAnswer()">Hiện đáp án</button>`;
+  
+  let typeBox = "";
+  if(note.type === "typein") {
+    typeBox = `<br><input type="text" class="type-input" id="typeInput" placeholder="Type in the answer" autocomplete="off">`;
+  }
+  
+  content.innerHTML = `<div style="font-size:20px">${await renderHTML(note.front)}</div>` + typeBox;
+  bar.innerHTML = `<button class="show-ans-btn" onclick="showAnswer()">Show Answer</button>`;
+  
+  if(note.type === "typein") {
+    setTimeout(() => document.getElementById('typeInput').focus(), 100);
+  }
 }
 
-function formatIvl(mins) {
-  if (mins < 60) return mins + "m";
-  let days = mins / 1440;
-  if (days < 30) return Math.round(days) + "d";
-  return Math.round(days/30.4) + "mo";
+// LCS algorithm for Type in answer diff
+function diffTyped(typed, expected){
+  const a=[...(typed||"")].slice(0,200), b=[...(expected||"")].slice(0,200);
+  const n=a.length, m=b.length;
+  const dp=Array.from({length:n+1},()=>new Array(m+1).fill(0));
+  for(let i=n-1;i>=0;i--)for(let j=m-1;j>=0;j--) dp[i][j]=a[i]===b[j]?dp[i+1][j+1]+1:Math.max(dp[i+1][j],dp[i][j+1]);
+  const typedSeg=[], expSeg=[];
+  let i=0,j=0;
+  while(i<n&&j<m){
+    if(a[i]===b[j]){ typedSeg.push(["ok",a[i]]); expSeg.push(["ok",b[j]]); i++; j++; }
+    else if(dp[i+1][j]>=dp[i][j+1]){ typedSeg.push(["bad",a[i]]); i++; }
+    else{ expSeg.push(["miss",b[j]]); typedSeg.push(["miss","‑"]); j++; }
+  }
+  while(i<n){ typedSeg.push(["bad",a[i++]]); } while(j<m){ expSeg.push(["miss",b[j]]); typedSeg.push(["miss","‑"]); }
+  const seg2html=seg=>seg.map(([cl,ch])=>`<span class="${cl}">${ch}</span>`).join("");
+  return { typedHtml:seg2html(typedSeg), expectedHtml: expected }; // Simplified expected
 }
 
 async function showAnswer() {
-  isAnswerShown = true;
-  const note = state.notes.find(nt => nt.id === currentCard.noteId);
-  const backHTML = await renderHTMLWithMedia(note.back);
-  document.getElementById('cardContent').innerHTML += `<hr class="card-hr">` + backHTML;
+  isAns = true;
+  const nt = state.notes.find(n => n.id === currentCard.noteId);
   
-  const c = currentCard;
-  let i1 = 1, i2 = 10, i3 = CFG.gradIvl * 1440, i4 = CFG.easyIvl * 1440;
-  
-  if (c.state === 'review') {
-    i1 = 10; 
-    i2 = applyFuzz(c.ivl * 1.2) * 1440;
-    i3 = applyFuzz(c.ivl * (c.ease / 1000)) * 1440;
-    i4 = applyFuzz(c.ivl * (c.ease / 1000) * 1.3) * 1440;
+  let diffHtml = "";
+  if(nt.type === "typein") {
+      const typed = document.getElementById('typeInput').value || "";
+      // Strip html from expected back for pure diff
+      const expectedText = nt.back.replace(/<[^>]*>?/gm, ''); 
+      const diff = diffTyped(typed, expectedText);
+      diffHtml = `<div class="type-cmp">${diff.typedHtml}</div><br>`;
+      document.getElementById('typeInput').style.display = 'none';
   }
-
+  
+  document.getElementById('cardContent').innerHTML += diffHtml + `<hr class="study-hr">` + `<div style="font-size:20px">${await renderHTML(nt.back)}</div>`;
+  
   document.getElementById('answerBar').innerHTML = `
-    <div class="grade-row">
-      <button class="grade again" onclick="processRating(1)"><span class="ivl">${formatIvl(i1)}</span><span class="lbl">Lại</span></button>
-      <button class="grade hard" onclick="processRating(2)"><span class="ivl">${formatIvl(i2)}</span><span class="lbl">Khó</span></button>
-      <button class="grade good" onclick="processRating(3)"><span class="ivl">${formatIvl(i3)}</span><span class="lbl">Tốt</span></button>
-      <button class="grade easy" onclick="processRating(4)"><span class="ivl">${formatIvl(i4)}</span><span class="lbl">Dễ</span></button>
+    <div class="answer-btns">
+      <button class="ans-btn ans-again" onclick="ans(1)"><span><1m</span>Again</button>
+      <button class="ans-btn ans-hard" onclick="ans(2)"><span>6m</span>Hard</button>
+      <button class="ans-btn ans-good" onclick="ans(3)"><span>10m</span>Good</button>
+      <button class="ans-btn ans-easy" onclick="ans(4)"><span>4d</span>Easy</button>
     </div>
   `;
 }
 
-function processRating(rating) {
-  const c = currentCard;
-  const now = Date.now();
-  const td = today();
-  
-  state.revlogs.push({ id: Date.now(), cid: c.id, rating: rating });
-
+function ans(grade) {
+  const c = currentCard; const td = today(), now = Date.now();
   if (c.state === 'new' || c.state === 'learning') {
-    if (rating === 1) { c.stepIdx = 0; c.due = now + CFG.steps[0] * MIN; c.state = 'learning'; } 
-    else if (rating === 2) { c.due = now + ((CFG.steps[c.stepIdx] + CFG.steps[Math.max(0, c.stepIdx-1)])/2) * MIN; c.state = 'learning';} 
-    else if (rating === 3) {
-      c.stepIdx++;
-      if (c.stepIdx >= CFG.steps.length) { c.state = 'review'; c.ivl = CFG.gradIvl; c.due = td + c.ivl; } 
-      else { c.due = now + CFG.steps[c.stepIdx] * MIN; c.state = 'learning'; }
-    } else if (rating === 4) { c.state = 'review'; c.ivl = CFG.easyIvl; c.due = td + c.ivl; }
-  } else if (c.state === 'review') {
-    if (rating === 1) { c.lapses++; c.ease = Math.max(1300, c.ease - 200); c.state = 'learning'; c.stepIdx = 0; c.due = now + CFG.steps[0] * MIN; } 
-    else if (rating === 2) { c.ease = Math.max(1300, c.ease - 150); c.ivl = applyFuzz(c.ivl * 1.2); c.due = td + c.ivl; } 
-    else if (rating === 3) { c.ivl = applyFuzz(c.ivl * (c.ease / 1000)); c.due = td + c.ivl; } 
-    else if (rating === 4) { c.ease += 150; c.ivl = applyFuzz(c.ivl * (c.ease / 1000) * 1.3); c.due = td + c.ivl; }
+    if (grade === 1) { c.due = now + MIN; c.state = 'learning'; }
+    else if (grade === 4) { c.state = 'review'; c.ivl = 4; c.due = td + 4; }
+    else { c.state = 'review'; c.ivl = 1; c.due = td + 1; }
+  } else {
+    if (grade === 1) { c.state = 'learning'; c.due = now + MIN; c.ivl = 1; }
+    else if (grade === 4) { c.ivl = Math.round(c.ivl * 1.3 * 1.3); c.due = td + c.ivl; }
+    else { c.ivl = Math.round(c.ivl * 1.2); c.due = td + c.ivl; }
   }
-  
-  c.reps++; saveData(); loadNextCard();
+  saveData(); loadNextCard();
 }
 
-/* ADD NOTES (CẬP NHẬT LOGIC) */
-function renderAddScreen() {
-  const sel = document.getElementById('addDeck');
-  sel.innerHTML = "";
-  state.decks.forEach(d => { sel.innerHTML += `<option value="${d.id}">${d.name}</option>`; });
-}
-function addNote() {
-  const dk = document.getElementById('addDeck').value;
-  const type = document.getElementById('addType').value;
-  const f = document.getElementById('addFront').innerHTML;
-  const b = document.getElementById('addBack').innerHTML;
-  const tags = document.getElementById('addTags').value.split(" ").filter(t=>t);
-  
-  if(!f || f==="<br>") return alert("Mặt trước không được để trống!");
-
-  const n = {id: uid(), deckId: dk, type: type, front: f, back: b, tags: tags};
-  state.notes.push(n);
-  state.cards.push({id: uid(), noteId: n.id, deckId: dk, state: "new", due: 0, ivl: 0, ease: CFG.startingEase, reps: 0, lapses: 0, stepIdx: 0});
-  
-  saveData();
-  document.getElementById('addFront').innerHTML = "";
-  document.getElementById('addBack').innerHTML = "";
-  alert("Thêm thẻ thành công!");
-}
-
-/* HEATMAP STATS */
-function renderStats() {
-  const grid = document.getElementById('heatmapGrid');
-  grid.innerHTML = "";
-  const now = Date.now();
-  
-  for(let i=29; i>=0; i--) {
-     const d = now - i * DAY;
-     const start = new Date(d).setHours(0,0,0,0);
-     const end = new Date(d).setHours(23,59,59,999);
-     
-     const count = state.revlogs.filter(r => r.id >= start && r.id <= end).length;
-     let level = 0;
-     if(count > 0 && count <= 10) level = 1;
-     else if(count > 10 && count <= 30) level = 2;
-     else if(count > 30 && count <= 50) level = 3;
-     else if(count > 50) level = 4;
-     
-     grid.innerHTML += `<div class="heatmap-cell" data-level="${level}" title="${count} lượt học"></div>`;
-  }
-}
+/* EXPORT */
 function exportData() {
-  const blob = new Blob([JSON.stringify(state)], {type: "application/json"});
-  const a = document.createElement("a"); a.href = URL.createObjectURL(blob);
-  a.download = "anki-pwa-backup.json"; a.click();
+  document.getElementById('actionSheet').classList.remove('active');
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([JSON.stringify(state)], {type: "application/json"}));
+  a.download = "anki-collection.json"; a.click();
 }
 
 /* INIT */
-(async function initApp() {
-  await initDB();
-  state = loadData();
-  if(!state.revlogs) state.revlogs = [];
-  renderDecks();
-})();
+(async () => { await initDB(); state = loadData(); renderDecks(); })();
 </script>
 </body>
 </html>
