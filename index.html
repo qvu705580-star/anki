@@ -68,6 +68,10 @@
   .editor:not(:last-child) { border-bottom: 1px solid var(--border); }
   [contenteditable="true"]:empty:before { content: attr(placeholder); color: var(--muted); pointer-events: none; }
 
+  /* MỚI: Thanh công cụ Rich Text */
+  .rich-text-toolbar { display: flex; gap: 15px; padding: 10px 16px; background: var(--btnface); border-bottom: 1px solid var(--border); align-items: center; overflow-x: auto; white-space: nowrap;}
+  .rich-text-toolbar button { background: none; border: none; font-size: 16px; font-weight: bold; color: var(--text); cursor: pointer; }
+
   .btn { display: block; width: calc(100% - 32px); margin: 20px auto; padding: 14px; font-size: 17px; font-weight: 600; text-align: center; border-radius: 10px; border: none; cursor: pointer; }
   .btn-primary { background: var(--blue); color: #fff; }
   .btn-outline { background: transparent; border: 1px solid var(--blue); color: var(--blue); }
@@ -115,16 +119,35 @@
 
   <section id="view-add" class="hidden">
     <div class="form-group">
-      <label>Cài đặt & Vị trí</label>
+      <label>Loại & Vị trí</label>
       <div class="input-box">
+        <select id="addType">
+          <option value="basic">Cơ bản (Mặt trước -> Mặt sau)</option>
+          <option value="cloze">Điền chỗ trống (Cloze)</option>
+        </select>
         <select id="addDeck"></select>
       </div>
     </div>
     <div class="form-group">
       <label>Nội dung thẻ</label>
       <div class="input-box">
+        <div class="rich-text-toolbar">
+          <button onclick="document.execCommand('bold', false, null)"><b>B</b></button>
+          <button onclick="document.execCommand('italic', false, null)"><i>I</i></button>
+          <button onclick="document.execCommand('underline', false, null)"><u>U</u></button>
+          <button onclick="document.execCommand('insertText', false, '{{c1::...}}')">[…]</button>
+          <div style="width: 1px; height: 20px; background: var(--border);"></div>
+          <button onclick="document.getElementById('mediaUpload').click()">📎 File</button>
+          <input type="file" id="mediaUpload" accept="image/*,audio/*" style="display:none" onchange="handleMediaUpload(event)">
+        </div>
         <div id="addFront" class="editor" contenteditable="true" placeholder="Mặt trước..."></div>
         <div id="addBack" class="editor" contenteditable="true" placeholder="Mặt sau..."></div>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Nhãn (Tags)</label>
+      <div class="input-box">
+        <input type="text" id="addTags" placeholder="Ví dụ: hsk5 kinh-te ielts">
       </div>
     </div>
     <button class="btn btn-primary" onclick="addNote()">Tạo thẻ</button>
@@ -150,7 +173,56 @@
 </div>
 
 <script>
-/* CẤU HÌNH THUẬT TOÁN SM-2 KÈM FUZZ (Tiệm cận Anki C++) */
+/* CƠ SỞ DỮ LIỆU INDEXED_DB (Chứa Media) */
+const DB_NAME = "AnkiMediaDB";
+let db;
+
+function initDB() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(DB_NAME, 1);
+    req.onupgradeneeded = (e) => { e.target.result.createObjectStore("media"); };
+    req.onsuccess = (e) => { db = e.target.result; resolve(); };
+    req.onerror = () => reject();
+  });
+}
+function saveMedia(id, fileBlob) {
+  return new Promise((resolve) => {
+    const tx = db.transaction("media", "readwrite");
+    tx.objectStore("media").put(fileBlob, id);
+    tx.oncomplete = resolve;
+  });
+}
+function getMedia(id) {
+  return new Promise((resolve) => {
+    const tx = db.transaction("media", "readonly");
+    const req = tx.objectStore("media").get(id);
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => resolve(null);
+  });
+}
+async function handleMediaUpload(e) {
+  const file = e.target.files[0];
+  if(!file) return;
+  const id = "media_" + Date.now();
+  await saveMedia(id, file);
+  const tempUrl = URL.createObjectURL(file);
+  let html = file.type.startsWith("image/") ? `<br><img src="${tempUrl}" data-media-id="${id}" style="max-width:100%; border-radius:8px;"><br>` : `<br><audio controls src="${tempUrl}" data-media-id="${id}"></audio><br>`;
+  document.execCommand('insertHTML', false, html);
+  e.target.value = ""; 
+}
+async function renderHTMLWithMedia(htmlString) {
+  const tempDiv = document.createElement('div');
+  tempDiv.innerHTML = htmlString;
+  const mediaEls = tempDiv.querySelectorAll('[data-media-id]');
+  for (let el of mediaEls) {
+    const id = el.getAttribute('data-media-id');
+    const blob = await getMedia(id);
+    if (blob) el.src = URL.createObjectURL(blob);
+  }
+  return tempDiv.innerHTML;
+}
+
+/* CẤU HÌNH THUẬT TOÁN SM-2 KÈM FUZZ */
 const CFG = { steps: [1, 10], gradIvl: 1, easyIvl: 4, startingEase: 2500 };
 const DAY = 86400000, MIN = 60000;
 let state = null, currentDeck = null, currentCard = null, isAnswerShown = false;
@@ -158,7 +230,6 @@ let state = null, currentDeck = null, currentCard = null, isAnswerShown = false;
 function uid() { return Date.now().toString(36) + Math.random().toString(36).substring(2,7); }
 function today() { return Math.floor((Date.now() - 4*3600000)/DAY); }
 
-/* THUẬT TOÁN FUZZ FACTOR CHUẨN ANKI */
 function applyFuzz(ivl) {
   if (ivl < 2.5) return Math.round(ivl);
   let fuzz = 0;
@@ -174,7 +245,6 @@ function loadData() {
   const raw = localStorage.getItem("anki_pwa_ultimate");
   if (raw) return JSON.parse(raw);
   
-  // HỆ THỐNG DATA MẪU 
   const d1 = uid(), d2 = uid(), d3 = uid();
   const s = { 
     version: 4, 
@@ -183,17 +253,14 @@ function loadData() {
   };
   
   const addCard = (dk, f, b) => {
-    const n = {id: uid(), deckId: dk, front: f, back: b};
+    const n = {id: uid(), deckId: dk, type: "basic", front: f, back: b, tags: []};
     s.notes.push(n);
     s.cards.push({id: uid(), noteId: n.id, deckId: dk, state: "new", due: 0, ivl: 0, ease: CFG.startingEase, reps: 0, lapses: 0, stepIdx: 0});
   };
 
   addCard(d1, "Opportunity Cost (Chi phí cơ hội)", "Giá trị của phương án tốt nhất bị bỏ lỡ khi đưa ra một lựa chọn.");
-  addCard(d1, "Sunk Cost Fallacy", "Ngụy biện chi phí chìm: Tiếp tục đầu tư vào một quyết định tồi chỉ vì đã lỡ bỏ ra tài nguyên.");
   addCard(d2, "糟糕 (zāogāo)", "Tồi tệ, hỏng bét.");
-  addCard(d2, "特征 (tèzhēng)", "Đặc trưng, đặc điểm nhận dạng.");
-  addCard(d3, "List Comprehension", "Cú pháp ngắn gọn để khởi tạo list: <br><code>[x**2 for x in range(10)]</code>");
-  
+  addCard(d3, "List Comprehension", "Cú pháp khởi tạo list: <br><code>[x**2 for x in range(10)]</code>");
   return s;
 }
 function saveData() { localStorage.setItem("anki_pwa_ultimate", JSON.stringify(state)); }
@@ -267,7 +334,7 @@ function startStudy(deckId, deckName) {
   loadNextCard();
 }
 
-function loadNextCard() {
+async function loadNextCard() {
   const td = today(), now = Date.now();
   const cards = state.cards.filter(c => c.deckId === currentDeck);
   
@@ -295,7 +362,7 @@ function loadNextCard() {
   currentCard = next;
   isAnswerShown = false;
   const note = state.notes.find(nt => nt.id === next.noteId);
-  content.innerHTML = note.front;
+  content.innerHTML = await renderHTMLWithMedia(note.front);
   bar.classList.remove('hidden');
   bar.innerHTML = `<button class="show-btn" onclick="showAnswer()">Hiện đáp án</button>`;
 }
@@ -307,10 +374,11 @@ function formatIvl(mins) {
   return Math.round(days/30.4) + "mo";
 }
 
-function showAnswer() {
+async function showAnswer() {
   isAnswerShown = true;
   const note = state.notes.find(nt => nt.id === currentCard.noteId);
-  document.getElementById('cardContent').innerHTML += `<hr class="card-hr">` + note.back;
+  const backHTML = await renderHTMLWithMedia(note.back);
+  document.getElementById('cardContent').innerHTML += `<hr class="card-hr">` + backHTML;
   
   const c = currentCard;
   let i1 = 1, i2 = 10, i3 = CFG.gradIvl * 1440, i4 = CFG.easyIvl * 1440;
@@ -337,7 +405,6 @@ function processRating(rating) {
   const now = Date.now();
   const td = today();
   
-  // Lưu RevLog (Lịch sử Data)
   state.revlogs.push({ id: Date.now(), cid: c.id, rating: rating });
 
   if (c.state === 'new' || c.state === 'learning') {
@@ -358,7 +425,7 @@ function processRating(rating) {
   c.reps++; saveData(); loadNextCard();
 }
 
-/* ADD NOTES */
+/* ADD NOTES (CẬP NHẬT LOGIC) */
 function renderAddScreen() {
   const sel = document.getElementById('addDeck');
   sel.innerHTML = "";
@@ -366,17 +433,21 @@ function renderAddScreen() {
 }
 function addNote() {
   const dk = document.getElementById('addDeck').value;
+  const type = document.getElementById('addType').value;
   const f = document.getElementById('addFront').innerHTML;
   const b = document.getElementById('addBack').innerHTML;
-  if(!f) return alert("Mặt trước trống!");
+  const tags = document.getElementById('addTags').value.split(" ").filter(t=>t);
+  
+  if(!f || f==="<br>") return alert("Mặt trước không được để trống!");
 
-  const n = {id: uid(), deckId: dk, front: f, back: b};
+  const n = {id: uid(), deckId: dk, type: type, front: f, back: b, tags: tags};
   state.notes.push(n);
   state.cards.push({id: uid(), noteId: n.id, deckId: dk, state: "new", due: 0, ivl: 0, ease: CFG.startingEase, reps: 0, lapses: 0, stepIdx: 0});
   
   saveData();
   document.getElementById('addFront').innerHTML = "";
   document.getElementById('addBack').innerHTML = "";
+  // Lưu ý: Các thiết lập (Bộ thẻ, Loại thẻ, Tags) được giữ nguyên giống Anki xịn
   alert("Thêm thẻ thành công!");
 }
 
@@ -408,7 +479,8 @@ function exportData() {
 }
 
 /* INIT */
-(function initApp() {
+(async function initApp() {
+  await initDB();
   state = loadData();
   if(!state.revlogs) state.revlogs = [];
   renderDecks();
