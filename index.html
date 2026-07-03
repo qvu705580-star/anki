@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="vi" data-night="0">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Anki Pro">
+<meta name="theme-color" content="#f2f2f7">
+<title>Anki PWA - Ultimate</title>
+<style>
+  :root {
+    --blue: #007aff; --new: #007aff; --learn: #ff3b30; --due: #34c759;
+    --bg: #f2f2f7; --panel: #ffffff; --text: #000000; --muted: #8e8e93;
+    --border: #c6c6c8; --btnface: #e5e5ea; 
+    --again: #ff3b30; --hard: #8e8e93; --good: #34c759; --easy: #007aff;
+    --nav-bg: rgba(249, 249, 249, 0.94);
+  }
+  html[data-night="1"] {
+    --bg: #000000; --panel: #1c1c1e; --text: #ffffff; --muted: #98989d;
+    --border: #38383a; --btnface: #2c2c2e; --nav-bg: rgba(29, 29, 29, 0.94);
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); display: flex; flex-direction: column; min-height: 100vh; }
+  
+  header { background: var(--nav-bg); backdrop-filter: blur(10px); padding: calc(env(safe-area-inset-top) + 12px) 16px 12px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 50; }
+  header h1 { margin: 0; font-size: 17px; font-weight: 600; }
+  header button { background: none; border: none; color: var(--blue); font-size: 17px; cursor: pointer; padding: 0; font-weight: 500; }
+  
+  main { flex: 1; overflow-y: auto; padding-bottom: calc(env(safe-area-inset-bottom) + 70px); }
+  .hidden { display: none !important; }
+
+  /* Tab Bar */
+  .tab-bar { position: fixed; bottom: 0; left: 0; right: 0; height: calc(env(safe-area-inset-bottom) + 55px); background: var(--nav-bg); backdrop-filter: blur(10px); border-top: 1px solid var(--border); display: flex; justify-content: space-around; padding-bottom: env(safe-area-inset-bottom); z-index: 100; }
+  .tab-item { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--muted); border: none; background: none; font-size: 11px; font-weight: 500; cursor: pointer; }
+  .tab-item.active { color: var(--blue); }
+  .tab-icon { font-size: 22px; margin-bottom: 4px; }
+
+  /* Deck List */
+  .deck-list { background: var(--panel); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); margin-top: 20px; }
+  .deck-row { display: flex; align-items: center; padding: 14px 16px; border-bottom: 1px solid var(--border); cursor: pointer; }
+  .deck-row:last-child { border-bottom: none; }
+  .deck-name { flex: 1; font-size: 17px; font-weight: 500; }
+  .deck-counts span { display: inline-block; width: 28px; text-align: right; font-size: 15px; font-weight: 600; }
+  .c-new { color: var(--new); } .c-learn { color: var(--learn); } .c-due { color: var(--due); }
+
+  /* Study Area */
+  .study-header { display: flex; justify-content: center; gap: 20px; padding: 10px 0; font-size: 15px; font-weight: 600; border-bottom: 1px solid var(--border); background: var(--panel); }
+  .study-area { position: relative; padding: 30px 20px; min-height: 60vh; font-size: 22px; text-align: center; overflow-wrap: break-word; }
+  .card-hr { border: none; border-top: 1px solid var(--border); margin: 25px 0; }
+  
+  .answer-bar { position: fixed; bottom: calc(env(safe-area-inset-bottom) + 15px); left: 10px; right: 10px; z-index: 60; }
+  .show-btn { width: 100%; padding: 16px; font-size: 17px; font-weight: 600; background: var(--btnface); color: var(--text); border: none; border-radius: 12px; cursor: pointer; }
+  .grade-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  .grade { border: none; border-radius: 12px; padding: 10px 4px; color: #fff; display: flex; flex-direction: column; align-items: center; cursor: pointer; }
+  .grade .ivl { font-size: 13px; opacity: 0.9; margin-bottom: 4px; }
+  .grade .lbl { font-size: 16px; font-weight: 600; }
+  .grade.again { background: var(--again); } .grade.hard { background: var(--hard); }
+  .grade.good { background: var(--good); } .grade.easy { background: var(--easy); }
+
+  /* UI Components */
+  .form-group { padding: 0 16px; margin-top: 20px; }
+  .form-group label { display: block; font-size: 13px; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; font-weight: 600;}
+  .input-box { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+  .input-box input, .input-box select { width: 100%; border: none; padding: 12px 16px; font-size: 17px; background: transparent; color: var(--text); outline: none;}
+  .input-box input:not(:last-child) { border-bottom: 1px solid var(--border); }
+  .editor { padding: 12px 16px; min-height: 80px; outline: none; }
+  .editor:not(:last-child) { border-bottom: 1px solid var(--border); }
+  [contenteditable="true"]:empty:before { content: attr(placeholder); color: var(--muted); pointer-events: none; }
+
+  .btn { display: block; width: calc(100% - 32px); margin: 20px auto; padding: 14px; font-size: 17px; font-weight: 600; text-align: center; border-radius: 10px; border: none; cursor: pointer; }
+  .btn-primary { background: var(--blue); color: #fff; }
+  .btn-outline { background: transparent; border: 1px solid var(--blue); color: var(--blue); }
+
+  /* Heatmap Stats */
+  .stats-card { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 16px; margin: 16px; }
+  .stats-title { font-size: 15px; font-weight: 600; margin-bottom: 12px; }
+  .heatmap-container { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 10px; }
+  .heatmap-cell { width: 14px; height: 14px; border-radius: 3px; background: var(--btnface); }
+  .heatmap-cell[data-level="1"] { background: #9be9a8; }
+  .heatmap-cell[data-level="2"] { background: #40c463; }
+  .heatmap-cell[data-level="3"] { background: #30a14e; }
+  .heatmap-cell[data-level="4"] { background: #216e39; }
+  html[data-night="1"] .heatmap-cell[data-level="1"] { background: #0e4429; }
+  html[data-night="1"] .heatmap-cell[data-level="2"] { background: #006d32; }
+  html[data-night="1"] .heatmap-cell[data-level="3"] { background: #26a641; }
+  html[data-night="1"] .heatmap-cell[data-level="4"] { background: #39d353; }
+</style>
+</head>
+<body>
+
+<header>
+  <button id="headerLeftBtn">Đồng bộ</button>
+  <h1 id="headerTitle">Bộ thẻ</h1>
+  <button id="headerRightBtn" onclick="toggleNightMode()">🌙</button>
+</header>
+
+<main>
+  <section id="view-decks">
+    <div class="deck-list" id="deckList"></div>
+    <button class="btn btn-outline" onclick="createNewDeck()">+ Thêm bộ thẻ mới</button>
+  </section>
+
+  <section id="view-study" class="hidden">
+    <div class="study-header">
+      <span class="c-new" id="sNew">0</span>
+      <span class="c-learn" id="sLearn">0</span>
+      <span class="c-due" id="sDue">0</span>
+    </div>
+    <div class="study-area">
+      <div id="cardContent" style="position: relative; z-index: 5;"></div>
+    </div>
+    <div class="answer-bar hidden" id="answerBar"></div>
+  </section>
+
+  <section id="view-add" class="hidden">
+    <div class="form-group">
+      <label>Cài đặt & Vị trí</label>
+      <div class="input-box">
+        <select id="addDeck"></select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Nội dung thẻ</label>
+      <div class="input-box">
+        <div id="addFront" class="editor" contenteditable="true" placeholder="Mặt trước..."></div>
+        <div id="addBack" class="editor" contenteditable="true" placeholder="Mặt sau..."></div>
+      </div>
+    </div>
+    <button class="btn btn-primary" onclick="addNote()">Tạo thẻ</button>
+  </section>
+
+  <section id="view-stats" class="hidden">
+    <div class="stats-card">
+      <div class="stats-title">Hoạt động ôn tập (30 ngày qua)</div>
+      <div class="heatmap-container" id="heatmapGrid"></div>
+      <p style="font-size: 12px; color: var(--muted); margin-top: 10px;">Dữ liệu trích xuất từ Review Logs (RevLog).</p>
+    </div>
+    <div class="form-group">
+      <label>Hệ thống</label>
+      <button class="btn btn-outline" onclick="exportData()">Lưu trữ JSON</button>
+    </div>
+  </section>
+</main>
+
+<div class="tab-bar" id="tabBar">
+  <button class="tab-item active" data-tab="decks"><div class="tab-icon">🗂</div>Bộ thẻ</button>
+  <button class="tab-item" data-tab="add"><div class="tab-icon">➕</div>Thêm</button>
+  <button class="tab-item" data-tab="stats"><div class="tab-icon">📊</div>Thống kê</button>
+</div>
+
+<script>
+/* CẤU HÌNH THUẬT TOÁN SM-2 KÈM FUZZ (Tiệm cận Anki C++) */
+const CFG = { steps: [1, 10], gradIvl: 1, easyIvl: 4, startingEase: 2500 };
+const DAY = 86400000, MIN = 60000;
+let state = null, currentDeck = null, currentCard = null, isAnswerShown = false;
+
+function uid() { return Date.now().toString(36) + Math.random().toString(36).substring(2,7); }
+function today() { return Math.floor((Date.now() - 4*3600000)/DAY); }
+
+/* THUẬT TOÁN FUZZ FACTOR CHUẨN ANKI */
+function applyFuzz(ivl) {
+  if (ivl < 2.5) return Math.round(ivl);
+  let fuzz = 0;
+  if (ivl < 7) fuzz = Math.max(1, Math.round(ivl * 0.25));
+  else if (ivl < 30) fuzz = Math.max(2, Math.round(ivl * 0.15));
+  else fuzz = Math.max(4, Math.round(ivl * 0.05));
+  const min = ivl - fuzz;
+  const max = ivl + fuzz;
+  return Math.floor(min + Math.random() * (max - min + 1));
+}
+
+function loadData() {
+  const raw = localStorage.getItem("anki_pwa_ultimate");
+  if (raw) return JSON.parse(raw);
+  
+  // HỆ THỐNG DATA MẪU 
+  const d1 = uid(), d2 = uid(), d3 = uid();
+  const s = { 
+    version: 4, 
+    decks: [{id: d1, name: "Kinh tế vi mô"}, {id: d2, name: "Từ vựng HSK 5"}, {id: d3, name: "Lập trình Python"}], 
+    notes: [], cards: [], revlogs: []
+  };
+  
+  const addCard = (dk, f, b) => {
+    const n = {id: uid(), deckId: dk, front: f, back: b};
+    s.notes.push(n);
+    s.cards.push({id: uid(), noteId: n.id, deckId: dk, state: "new", due: 0, ivl: 0, ease: CFG.startingEase, reps: 0, lapses: 0, stepIdx: 0});
+  };
+
+  addCard(d1, "Opportunity Cost (Chi phí cơ hội)", "Giá trị của phương án tốt nhất bị bỏ lỡ khi đưa ra một lựa chọn.");
+  addCard(d1, "Sunk Cost Fallacy", "Ngụy biện chi phí chìm: Tiếp tục đầu tư vào một quyết định tồi chỉ vì đã lỡ bỏ ra tài nguyên.");
+  addCard(d2, "糟糕 (zāogāo)", "Tồi tệ, hỏng bét.");
+  addCard(d2, "特征 (tèzhēng)", "Đặc trưng, đặc điểm nhận dạng.");
+  addCard(d3, "List Comprehension", "Cú pháp ngắn gọn để khởi tạo list: <br><code>[x**2 for x in range(10)]</code>");
+  
+  return s;
+}
+function saveData() { localStorage.setItem("anki_pwa_ultimate", JSON.stringify(state)); }
+
+/* NAVIGATION */
+document.querySelectorAll('.tab-item').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-item').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelectorAll('main > section').forEach(s => s.classList.add('hidden'));
+    
+    const tab = btn.dataset.tab;
+    document.getElementById('view-' + tab).classList.remove('hidden');
+    document.getElementById('headerTitle').innerText = {decks: "Bộ thẻ", add: "Thêm thẻ", stats: "Thống kê"}[tab];
+    
+    if(tab === 'decks') renderDecks();
+    if(tab === 'add') renderAddScreen();
+    if(tab === 'stats') renderStats();
+  });
+});
+
+function toggleNightMode() {
+  const root = document.documentElement;
+  root.setAttribute("data-night", root.getAttribute("data-night") === "1" ? "0" : "1");
+}
+
+/* DECKS */
+function renderDecks() {
+  const list = document.getElementById('deckList');
+  list.innerHTML = "";
+  const td = today(), now = Date.now();
+  
+  state.decks.forEach(dk => {
+    let n=0, l=0, d=0;
+    state.cards.filter(c => c.deckId === dk.id).forEach(c => {
+      if(c.state === "new") n++;
+      else if(c.state === "learning" && c.due <= now) l++;
+      else if(c.state === "review" && c.due <= td) d++;
+    });
+    list.innerHTML += `
+      <div class="deck-row" onclick="startStudy('${dk.id}', '${dk.name}')">
+        <div class="deck-name">${dk.name}</div>
+        <div class="deck-counts">
+          <span class="c-new">${n}</span><span class="c-learn">${l}</span><span class="c-due">${d}</span>
+        </div>
+      </div>
+    `;
+  });
+}
+
+function createNewDeck() {
+  const name = prompt("Nhập tên bộ thẻ mới:");
+  if(name) { state.decks.push({id: uid(), name: name.trim()}); saveData(); renderDecks(); }
+}
+
+/* STUDY CORE */
+function startStudy(deckId, deckName) {
+  currentDeck = deckId;
+  document.querySelectorAll('main > section').forEach(s => s.classList.add('hidden'));
+  document.getElementById('view-study').classList.remove('hidden');
+  document.getElementById('tabBar').style.display = 'none'; 
+  
+  document.getElementById('headerTitle').innerText = deckName;
+  document.getElementById('headerLeftBtn').innerText = "Trở về";
+  document.getElementById('headerLeftBtn').onclick = () => {
+    document.getElementById('headerLeftBtn').innerText = "Đồng bộ";
+    document.getElementById('headerLeftBtn').onclick = null;
+    document.getElementById('tabBar').style.display = 'flex';
+    document.querySelector('.tab-item[data-tab="decks"]').click();
+  };
+  loadNextCard();
+}
+
+function loadNextCard() {
+  const td = today(), now = Date.now();
+  const cards = state.cards.filter(c => c.deckId === currentDeck);
+  
+  let n=0, l=0, d=0;
+  cards.forEach(c => {
+    if(c.state === "new") n++;
+    else if(c.state === "learning") l++;
+    else if(c.state === "review" && c.due <= td) d++;
+  });
+  
+  document.getElementById('sNew').innerText = n;
+  document.getElementById('sLearn').innerText = l;
+  document.getElementById('sDue').innerText = d;
+  
+  let next = cards.find(c => c.state === "learning" && c.due <= now) || cards.find(c => c.state === "review" && c.due <= td) || cards.find(c => c.state === "new");
+
+  const content = document.getElementById('cardContent');
+  const bar = document.getElementById('answerBar');
+  
+  if(!next) {
+    content.innerHTML = `<div style="padding-top:60px">🎉<br>Xong rồi! Không còn thẻ nào tới hạn.</div>`;
+    bar.classList.add('hidden'); currentCard = null; return;
+  }
+  
+  currentCard = next;
+  isAnswerShown = false;
+  const note = state.notes.find(nt => nt.id === next.noteId);
+  content.innerHTML = note.front;
+  bar.classList.remove('hidden');
+  bar.innerHTML = `<button class="show-btn" onclick="showAnswer()">Hiện đáp án</button>`;
+}
+
+function formatIvl(mins) {
+  if (mins < 60) return mins + "m";
+  let days = mins / 1440;
+  if (days < 30) return Math.round(days) + "d";
+  return Math.round(days/30.4) + "mo";
+}
+
+function showAnswer() {
+  isAnswerShown = true;
+  const note = state.notes.find(nt => nt.id === currentCard.noteId);
+  document.getElementById('cardContent').innerHTML += `<hr class="card-hr">` + note.back;
+  
+  const c = currentCard;
+  let i1 = 1, i2 = 10, i3 = CFG.gradIvl * 1440, i4 = CFG.easyIvl * 1440;
+  
+  if (c.state === 'review') {
+    i1 = 10; 
+    i2 = applyFuzz(c.ivl * 1.2) * 1440;
+    i3 = applyFuzz(c.ivl * (c.ease / 1000)) * 1440;
+    i4 = applyFuzz(c.ivl * (c.ease / 1000) * 1.3) * 1440;
+  }
+
+  document.getElementById('answerBar').innerHTML = `
+    <div class="grade-row">
+      <button class="grade again" onclick="processRating(1)"><span class="ivl">${formatIvl(i1)}</span><span class="lbl">Lại</span></button>
+      <button class="grade hard" onclick="processRating(2)"><span class="ivl">${formatIvl(i2)}</span><span class="lbl">Khó</span></button>
+      <button class="grade good" onclick="processRating(3)"><span class="ivl">${formatIvl(i3)}</span><span class="lbl">Tốt</span></button>
+      <button class="grade easy" onclick="processRating(4)"><span class="ivl">${formatIvl(i4)}</span><span class="lbl">Dễ</span></button>
+    </div>
+  `;
+}
+
+function processRating(rating) {
+  const c = currentCard;
+  const now = Date.now();
+  const td = today();
+  
+  // Lưu RevLog (Lịch sử Data)
+  state.revlogs.push({ id: Date.now(), cid: c.id, rating: rating });
+
+  if (c.state === 'new' || c.state === 'learning') {
+    if (rating === 1) { c.stepIdx = 0; c.due = now + CFG.steps[0] * MIN; c.state = 'learning'; } 
+    else if (rating === 2) { c.due = now + ((CFG.steps[c.stepIdx] + CFG.steps[Math.max(0, c.stepIdx-1)])/2) * MIN; c.state = 'learning';} 
+    else if (rating === 3) {
+      c.stepIdx++;
+      if (c.stepIdx >= CFG.steps.length) { c.state = 'review'; c.ivl = CFG.gradIvl; c.due = td + c.ivl; } 
+      else { c.due = now + CFG.steps[c.stepIdx] * MIN; c.state = 'learning'; }
+    } else if (rating === 4) { c.state = 'review'; c.ivl = CFG.easyIvl; c.due = td + c.ivl; }
+  } else if (c.state === 'review') {
+    if (rating === 1) { c.lapses++; c.ease = Math.max(1300, c.ease - 200); c.state = 'learning'; c.stepIdx = 0; c.due = now + CFG.steps[0] * MIN; } 
+    else if (rating === 2) { c.ease = Math.max(1300, c.ease - 150); c.ivl = applyFuzz(c.ivl * 1.2); c.due = td + c.ivl; } 
+    else if (rating === 3) { c.ivl = applyFuzz(c.ivl * (c.ease / 1000)); c.due = td + c.ivl; } 
+    else if (rating === 4) { c.ease += 150; c.ivl = applyFuzz(c.ivl * (c.ease / 1000) * 1.3); c.due = td + c.ivl; }
+  }
+  
+  c.reps++; saveData(); loadNextCard();
+}
+
+/* ADD NOTES */
+function renderAddScreen() {
+  const sel = document.getElementById('addDeck');
+  sel.innerHTML = "";
+  state.decks.forEach(d => { sel.innerHTML += `<option value="${d.id}">${d.name}</option>`; });
+}
+function addNote() {
+  const dk = document.getElementById('addDeck').value;
+  const f = document.getElementById('addFront').innerHTML;
+  const b = document.getElementById('addBack').innerHTML;
+  if(!f) return alert("Mặt trước trống!");
+
+  const n = {id: uid(), deckId: dk, front: f, back: b};
+  state.notes.push(n);
+  state.cards.push({id: uid(), noteId: n.id, deckId: dk, state: "new", due: 0, ivl: 0, ease: CFG.startingEase, reps: 0, lapses: 0, stepIdx: 0});
+  
+  saveData();
+  document.getElementById('addFront').innerHTML = "";
+  document.getElementById('addBack').innerHTML = "";
+  alert("Thêm thẻ thành công!");
+}
+
+/* HEATMAP STATS */
+function renderStats() {
+  const grid = document.getElementById('heatmapGrid');
+  grid.innerHTML = "";
+  const now = Date.now();
+  
+  for(let i=29; i>=0; i--) {
+     const d = now - i * DAY;
+     const start = new Date(d).setHours(0,0,0,0);
+     const end = new Date(d).setHours(23,59,59,999);
+     
+     const count = state.revlogs.filter(r => r.id >= start && r.id <= end).length;
+     let level = 0;
+     if(count > 0 && count <= 10) level = 1;
+     else if(count > 10 && count <= 30) level = 2;
+     else if(count > 30 && count <= 50) level = 3;
+     else if(count > 50) level = 4;
+     
+     grid.innerHTML += `<div class="heatmap-cell" data-level="${level}" title="${count} lượt học"></div>`;
+  }
+}
+function exportData() {
+  const blob = new Blob([JSON.stringify(state)], {type: "application/json"});
+  const a = document.createElement("a"); a.href = URL.createObjectURL(blob);
+  a.download = "anki-pwa-backup.json"; a.click();
+}
+
+/* INIT */
+(function initApp() {
+  state = loadData();
+  if(!state.revlogs) state.revlogs = [];
+  renderDecks();
+})();
+</script>
+</body>
+</html>
